@@ -12,15 +12,42 @@ class MedController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $institutes = Organization::query()
+        $keyword = trim((string) $request->query('q', ''));
+        $city = trim((string) $request->query('city', ''));
+
+        $organizations = Organization::query()
             ->medicalInstitutes()
             ->withPublicProfile()
             ->with([
                 'clinicImages' => fn ($q) => $q->where('type', ClinicImage::TYPE_CARD),
+                'services',
+                'clinicAddresses',
             ])
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Organization $org) => $this->listItem($org));
+            ->get();
+
+        if ($city !== '') {
+            $organizations = $organizations
+                ->filter(fn (Organization $org) => $this->matchesCity($org, $city))
+                ->values();
+        }
+
+        if ($keyword !== '') {
+            $organizations = $organizations
+                ->map(fn (Organization $org) => [
+                    'org' => $org,
+                    'score' => $this->keywordScore($org, $keyword),
+                ])
+                ->filter(fn (array $row) => $row['score'] > 0)
+                ->sortByDesc('score')
+                ->values()
+                ->map(fn (array $row) => $row['org']);
+        } else {
+            $organizations = $organizations->sortBy('name')->values();
+        }
+
+        $institutes = $organizations
+            ->map(fn (Organization $org) => $this->listItem($org))
+            ->values();
 
         return response()->json(['institutes' => $institutes]);
     }
@@ -45,6 +72,62 @@ class MedController extends Controller
         return response()->json([
             'institute' => $this->detail($organization),
         ]);
+    }
+
+    private function matchesCity(Organization $org, string $city): bool
+    {
+        $needle = mb_strtolower($city);
+
+        if ($needle === '') {
+            return true;
+        }
+
+        if (str_contains(mb_strtolower($org->neighborhood ?? ''), $needle)) {
+            return true;
+        }
+
+        foreach ($org->clinicAddresses as $address) {
+            if (
+                str_contains(mb_strtolower($address->line ?? ''), $needle)
+                || str_contains(mb_strtolower($address->description ?? ''), $needle)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function keywordScore(Organization $org, string $keyword): int
+    {
+        $needle = mb_strtolower($keyword);
+
+        if ($needle === '') {
+            return 0;
+        }
+
+        $score = 0;
+        $score += $this->countOccurrences(mb_strtolower($org->name ?? ''), $needle);
+        $score += $this->countOccurrences(mb_strtolower($org->description ?? ''), $needle);
+
+        foreach ($org->specialties ?? [] as $specialty) {
+            $score += $this->countOccurrences(mb_strtolower((string) $specialty), $needle);
+        }
+
+        foreach ($org->services as $service) {
+            $score += $this->countOccurrences(mb_strtolower($service->name), $needle);
+        }
+
+        return $score;
+    }
+
+    private function countOccurrences(string $haystack, string $needle): int
+    {
+        if ($haystack === '' || $needle === '') {
+            return 0;
+        }
+
+        return substr_count($haystack, $needle);
     }
 
     /**
