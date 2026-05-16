@@ -2,6 +2,7 @@
 
 use App\Authorization\OrganizationAbilities;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\MedController;
 use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\UserProfileController;
 use App\Models\User;
@@ -9,6 +10,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+Route::get('/med', [MedController::class, 'index']);
+Route::get('/med/{slug}', [MedController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/user', [AuthController::class, 'user']);

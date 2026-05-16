@@ -44,6 +44,19 @@ if [ ! -f vendor/autoload.php ]; then
   composer install --no-interaction --prefer-dist
 fi
 
+# `php artisan serve` hides container env when .env exists (only APP_ENV etc. pass through).
+# Keep the mounted .env DB settings aligned with Docker / .env.docker.
+if [ "${DB_HOST:-}" = "mysql" ] && [ -f .env ]; then
+  for key in DB_CONNECTION DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD; do
+    val=$(printenv "$key" 2>/dev/null) || continue
+    if grep -q "^${key}=" .env 2>/dev/null; then
+      sed -i "s|^${key}=.*|${key}=${val}|" .env
+    else
+      printf '\n%s=%s\n' "$key" "$val" >> .env
+    fi
+  done
+fi
+
 php artisan config:clear
 php artisan migrate --force
 
