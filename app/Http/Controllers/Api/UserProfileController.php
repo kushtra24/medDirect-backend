@@ -4,12 +4,17 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AuthUserResource;
+use App\Services\PatientClaimService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class UserProfileController extends Controller
 {
+    public function __construct(
+        private readonly PatientClaimService $claimService,
+    ) {}
+
     public function update(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -22,6 +27,11 @@ class UserProfileController extends Controller
         $user = $request->user();
         $user->fill($validated);
         $user->save();
+
+        if ($user->isPatient()) {
+            $this->claimService->claimForUser($user);
+        }
+
         $user->load(['organizationMembers.organization']);
 
         return response()->json(['user' => new AuthUserResource($user)]);

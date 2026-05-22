@@ -95,4 +95,9 @@ class User extends Authenticatable
 
         return $member->can($ability);
     }
+
+    public function patients(): HasMany
+    {
+        return $this->hasMany(Patient::class);
+    }
 }

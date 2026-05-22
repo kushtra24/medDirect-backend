@@ -31,17 +31,6 @@ class OrganizationController extends Controller
         ]);
     }
 
-    /**
-     * Example protected action: create patient (requires canCreatePatient).
-     */
-    public function storePatientPlaceholder(Request $request, Organization $organization): JsonResponse
-    {
-        return response()->json([
-            'message' => 'Authorized for canCreatePatient. Replace with real patient creation.',
-            'organization_id' => $organization->id,
-        ], 201);
-    }
-
     public function updateMemberAbilities(
         UpdateOrganizationMemberAbilitiesRequest $request,
         Organization $organization,

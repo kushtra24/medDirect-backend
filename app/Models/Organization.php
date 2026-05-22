@@ -98,6 +98,16 @@ class Organization extends Model
             ->withTimestamps();
     }
 
+    public function patients(): HasMany
+    {
+        return $this->hasMany(Patient::class);
+    }
+
+    public function labResultReports(): HasMany
+    {
+        return $this->hasMany(LabResultReport::class);
+    }
+
     public function scopeClinics(Builder $query): Builder
     {
         return $query->where('type', self::TYPE_CLINIC);

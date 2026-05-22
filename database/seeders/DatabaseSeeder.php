@@ -95,5 +95,6 @@ class DatabaseSeeder extends Seeder
         );
 
         $this->call(ClinicSeeder::class);
+        $this->call(PatientSeeder::class);
     }
 }

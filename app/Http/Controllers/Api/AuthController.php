@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AuthUserResource;
 use App\Models\User;
+use App\Services\PatientClaimService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -12,6 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function __construct(
+        private readonly PatientClaimService $claimService,
+    ) {}
+
     public function register(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -19,6 +24,9 @@ class AuthController extends Controller
             'surname' => ['nullable', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
+            'date_of_birth' => ['nullable', 'date', 'before:today'],
+            'phone' => ['nullable', 'string', 'max:32'],
+            'address' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $fullName = trim($validated['name'].' '.($validated['surname'] ?? ''));
@@ -27,9 +35,14 @@ class AuthController extends Controller
             'name' => $fullName !== '' ? $fullName : $validated['name'],
             'email' => $validated['email'],
             'password' => $validated['password'],
+            'date_of_birth' => $validated['date_of_birth'] ?? null,
+            'phone' => $validated['phone'] ?? null,
+            'address' => $validated['address'] ?? null,
         ]);
         $user->role = User::ROLE_PATIENT;
         $user->save();
+
+        $claimed = $this->claimService->claimForUser($user);
 
         $user->load(['organizationMembers.organization']);
 
@@ -38,6 +51,7 @@ class AuthController extends Controller
         return response()->json([
             'user' => new AuthUserResource($user),
             'token' => $token,
+            'claimed_records' => $claimed->count(),
         ], 201);
     }
 
