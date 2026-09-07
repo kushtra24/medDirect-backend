@@ -15,6 +15,8 @@ class ClinicImage extends Model
 
     public const TYPE_CARD = 'card';
 
+    public const TYPE_GALLERY = 'gallery';
+
     protected $fillable = [
         'organization_id',
         'url',

@@ -6,6 +6,7 @@ use App\Models\Organization;
 use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -125,6 +126,56 @@ class PatientAndLabResultsTest extends TestCase
             ->assertJsonCount(1, 'patients')
             ->assertJsonPath('patients.0.first_name', 'Jane')
             ->assertJsonPath('patients.0.surname', 'Doe');
+    }
+
+    public function test_staff_can_import_patients_from_csv(): void
+    {
+        $staff = User::factory()->create(['role' => User::ROLE_STAFF]);
+        $org = Organization::query()->create([
+            'name' => 'Import Clinic',
+            'slug' => 'import-clinic',
+            'type' => Organization::TYPE_CLINIC,
+            'created_by_user_id' => $staff->id,
+        ]);
+        $org->members()->create([
+            'user_id' => $staff->id,
+            'is_owner' => true,
+            'abilities' => null,
+        ]);
+
+        $csv = <<<'CSV'
+        first_name,surname,date_of_birth,gender,email
+        Jane,Doe,1985-01-20,female,jane@example.com
+        John,Smith,1990-05-14,male,john@example.com
+        ,Missing First Name,1990-01-01,male,noname@example.com
+        CSV;
+
+        $file = UploadedFile::fake()->createWithContent('patients.csv', $csv);
+
+        Sanctum::actingAs($staff);
+
+        $response = $this->post("/api/organizations/{$org->id}/patients/import", [
+            'file' => $file,
+        ], ['Accept' => 'application/json']);
+
+        $response->assertOk()
+            ->assertJsonPath('imported', 2)
+            ->assertJsonPath('skipped', 1)
+            ->assertJsonPath('total', 3)
+            ->assertJsonPath('errors.0.row', 4);
+
+        $this->assertDatabaseHas('patients', [
+            'organization_id' => $org->id,
+            'email' => 'jane@example.com',
+        ]);
+        $this->assertDatabaseHas('patients', [
+            'organization_id' => $org->id,
+            'email' => 'john@example.com',
+        ]);
+        $this->assertDatabaseMissing('patients', [
+            'organization_id' => $org->id,
+            'email' => 'noname@example.com',
+        ]);
     }
 
     public function test_staff_can_add_lab_results_for_patient(): void

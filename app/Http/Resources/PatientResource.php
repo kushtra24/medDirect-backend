@@ -30,6 +30,7 @@ class PatientResource extends JsonResource
             'chronic_conditions' => $this->chronic_conditions,
             'phone' => $this->phone,
             'email' => $this->email,
+            'access_pin' => $this->access_pin,
             'is_claimed' => $this->isClaimed(),
             'claimed_at' => $this->claimed_at,
             'organization' => $this->whenLoaded('organization', fn () => [
@@ -40,6 +41,7 @@ class PatientResource extends JsonResource
             ]),
             'created_at' => $this->created_at,
             'lab_result_reports' => LabResultReportResource::collection($this->whenLoaded('labResultReports')),
+            'examination_result_reports' => ExaminationResultReportResource::collection($this->whenLoaded('examinationResultReports')),
         ];
     }
 }

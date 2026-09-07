@@ -18,8 +18,9 @@ class UpdateOrganizationMemberAbilitiesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'abilities' => ['required', 'array'],
+            'abilities' => ['sometimes', 'array'],
             'abilities.*' => ['boolean'],
+            'title' => ['sometimes', 'nullable', 'string', 'max:120'],
         ];
     }
 

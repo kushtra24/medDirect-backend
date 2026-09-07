@@ -23,10 +23,12 @@ class AuthUserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'role' => $this->role,
+            'must_change_password' => (bool) $this->must_change_password,
             'date_of_birth' => $this->date_of_birth?->format('Y-m-d'),
             'blood_type' => $this->blood_type,
             'phone' => $this->phone,
             'address' => $this->address,
+            'national_id' => $this->national_id,
             'avatar_url' => $this->avatar_path
                 ? Storage::disk('public')->url($this->avatar_path)
                 : null,

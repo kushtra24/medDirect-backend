@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ExaminationResultReportResource;
 use App\Http\Resources\LabResultReportResource;
+use App\Models\ExaminationResultReport;
 use App\Models\LabResultReport;
 use App\Models\User;
 use App\Services\PatientClaimService;
@@ -71,11 +73,23 @@ class PatientMedicalRecordsController extends Controller
             ->orderByDesc('reported_at')
             ->get();
 
+        $examinationReports = ExaminationResultReport::query()
+            ->where('patient_id', $patient->id)
+            ->where('status', ExaminationResultReport::STATUS_FINALIZED)
+            ->with(['items', 'organization', 'patient', 'createdBy'])
+            ->orderByDesc('reported_at')
+            ->get();
+
         return response()->json([
             'patient' => [
+                'id' => $patient->id,
                 'full_name' => $patient->fullName(),
+                'date_of_birth' => $patient->date_of_birth?->format('Y-m-d'),
+                'gender' => $patient->gender,
+                'access_pin' => $patient->access_pin,
             ],
             'reports' => LabResultReportResource::collection($reports),
+            'examination_reports' => ExaminationResultReportResource::collection($examinationReports),
         ]);
     }
 

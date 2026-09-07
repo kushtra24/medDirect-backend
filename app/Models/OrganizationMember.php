@@ -12,6 +12,7 @@ class OrganizationMember extends Model
         'organization_id',
         'user_id',
         'is_owner',
+        'title',
         'abilities',
     ];
 

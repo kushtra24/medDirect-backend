@@ -70,6 +70,37 @@ class PatientClaimService
     }
 
     /**
+     * Find the patient-portal account whose identity exactly matches the record a clinic
+     * is about to create, so the two can be linked via `patients.user_id`.
+     *
+     * All four fields (national ID, first name, surname, date of birth) must be supplied
+     * and must all match — this is intentionally stricter than {@see findUnclaimedMatches}
+     * so staff data entry never links to the wrong person on a partial/common-name match.
+     *
+     * @param  array{first_name?: ?string, surname?: ?string, date_of_birth?: ?string, national_id?: ?string}  $identity
+     */
+    public function findExactMatchUser(array $identity): ?User
+    {
+        $firstName = trim((string) ($identity['first_name'] ?? ''));
+        $surname = trim((string) ($identity['surname'] ?? ''));
+        $dob = $identity['date_of_birth'] ?? null;
+        $nationalId = trim((string) ($identity['national_id'] ?? ''));
+
+        if ($firstName === '' || $surname === '' || $dob === null || $nationalId === '') {
+            return null;
+        }
+
+        $name = Str::lower($firstName.' '.$surname);
+
+        return User::query()
+            ->where('role', User::ROLE_PATIENT)
+            ->whereRaw('LOWER(national_id) = ?', [Str::lower($nationalId)])
+            ->whereDate('date_of_birth', $dob)
+            ->whereRaw('LOWER(name) = ?', [$name])
+            ->first();
+    }
+
+    /**
      * Guest lookup by display name and access PIN.
      */
     public function findByNameAndPin(string $fullName, string $pin): ?Patient
@@ -90,7 +121,7 @@ class PatientClaimService
                 continue;
             }
 
-            if (! \Illuminate\Support\Facades\Hash::check($pin, (string) $patient->access_pin)) {
+            if (! hash_equals((string) $patient->access_pin, $pin)) {
                 continue;
             }
 

@@ -29,6 +29,7 @@ class Organization extends Model
         'type',
         'created_by_user_id',
         'description',
+        'email',
         'opening_hours',
         'health_insurances',
         'languages_spoken',
@@ -90,6 +91,11 @@ class Organization extends Model
     public function clinicImages(): HasMany
     {
         return $this->hasMany(ClinicImage::class)->orderBy('sort_order');
+    }
+
+    public function clinicTeamMembers(): HasMany
+    {
+        return $this->hasMany(ClinicTeamMember::class)->orderBy('sort_order');
     }
 
     public function services(): BelongsToMany

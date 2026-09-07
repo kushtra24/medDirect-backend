@@ -33,7 +33,7 @@ class Patient extends Model
         return [
             'date_of_birth' => 'date',
             'claimed_at' => 'datetime',
-            'access_pin' => 'hashed',
+            'access_pin' => 'encrypted',
         ];
     }
 
@@ -55,6 +55,16 @@ class Patient extends Model
     public function labResultReports(): HasMany
     {
         return $this->hasMany(LabResultReport::class)->orderByDesc('reported_at')->orderByDesc('id');
+    }
+
+    public function examinationResultReports(): HasMany
+    {
+        return $this->hasMany(ExaminationResultReport::class)->orderByDesc('reported_at')->orderByDesc('id');
+    }
+
+    public function updateNotices(): HasMany
+    {
+        return $this->hasMany(PatientUpdateNotice::class);
     }
 
     public function fullName(): string

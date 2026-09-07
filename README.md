@@ -4,7 +4,7 @@ Laravel 13 API with Sanctum bearer tokens, **platform roles**, and **clinic/lab 
 
 ## Docker (recommended)
 
-From the **repository root** (`medical/`):
+From the **repository root** (`med-direct/`):
 
 ```bash
 cp .env.docker.example .env.docker

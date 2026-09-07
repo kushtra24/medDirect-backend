@@ -13,7 +13,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'date_of_birth', 'blood_type', 'phone', 'address', 'avatar_path'])]
+#[Fillable(['name', 'email', 'password', 'date_of_birth', 'blood_type', 'phone', 'address', 'avatar_path', 'national_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -32,6 +32,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'date_of_birth' => 'date',
+            'must_change_password' => 'boolean',
         ];
     }
 
@@ -99,5 +100,10 @@ class User extends Authenticatable
     public function patients(): HasMany
     {
         return $this->hasMany(Patient::class);
+    }
+
+    public function patientUpdateNotices(): HasMany
+    {
+        return $this->hasMany(PatientUpdateNotice::class);
     }
 }

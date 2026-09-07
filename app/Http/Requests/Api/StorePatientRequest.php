@@ -16,6 +16,17 @@ class StorePatientRequest extends FormRequest
      */
     public function rules(): array
     {
+        return self::baseRules();
+    }
+
+    /**
+     * Shared with the CSV import flow so a single patient row is validated identically
+     * whether it comes from the form or a spreadsheet.
+     *
+     * @return array<string, mixed>
+     */
+    public static function baseRules(): array
+    {
         return [
             'first_name' => ['required', 'string', 'max:120'],
             'surname' => ['required', 'string', 'max:120'],
