@@ -41,6 +41,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::get('/user/medical-records', [PatientMedicalRecordsController::class, 'index']);
     Route::post('/user/claim-records', [PatientMedicalRecordsController::class, 'claim']);
+    Route::post('/patient-records/claim', [PatientMedicalRecordsController::class, 'claimSearched']);
 
     Route::get('/admin/ping', fn () => ['ok' => true, 'scope' => 'platform_admin'])
         ->middleware('role:'.User::ROLE_ADMIN);

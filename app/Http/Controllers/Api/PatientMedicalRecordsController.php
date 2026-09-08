@@ -48,6 +48,55 @@ class PatientMedicalRecordsController extends Controller
         ]);
     }
 
+    /**
+     * Claim the patient record a logged-in patient just found via the guest name+PIN lookup, so
+     * it shows on their profile permanently. Re-verifies the name+PIN (rather than trusting a
+     * patient_id) so a signed-in user can't claim an arbitrary record by guessing IDs.
+     */
+    public function claimSearched(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user->isPatient()) {
+            abort(403, 'Only patient accounts can claim records.');
+        }
+
+        $validated = $request->validate([
+            'full_name' => ['required', 'string', 'max:255'],
+            'access_pin' => ['required', 'string', 'size:6'],
+        ]);
+
+        $patient = $this->claimService->findByNameAndPin(
+            $validated['full_name'],
+            $validated['access_pin'],
+        );
+
+        if ($patient === null) {
+            return response()->json([
+                'message' => 'No matching patient record found.',
+            ], 404);
+        }
+
+        if ($patient->user_id !== null && $patient->user_id !== $user->id) {
+            return response()->json([
+                'message' => 'These results have already been claimed by another account.',
+            ], 409);
+        }
+
+        if ($patient->user_id === null) {
+            $patient->user_id = $user->id;
+            $patient->claimed_at = now();
+            $patient->save();
+        }
+
+        return response()->json([
+            'claimed' => true,
+            'patient' => [
+                'id' => $patient->id,
+                'is_claimed' => true,
+            ],
+        ]);
+    }
+
     public function lookup(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -87,6 +136,7 @@ class PatientMedicalRecordsController extends Controller
                 'date_of_birth' => $patient->date_of_birth?->format('Y-m-d'),
                 'gender' => $patient->gender,
                 'access_pin' => $patient->access_pin,
+                'is_claimed' => $patient->isClaimed(),
             ],
             'reports' => LabResultReportResource::collection($reports),
             'examination_reports' => ExaminationResultReportResource::collection($examinationReports),
