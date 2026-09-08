@@ -9,9 +9,15 @@ use App\Http\Controllers\Api\ExaminationResultReportController;
 use App\Http\Controllers\Api\LabResultReportController;
 use App\Http\Controllers\Api\MedController;
 use App\Http\Controllers\Api\OrganizationController;
+use App\Http\Controllers\Api\PatientAllergyController;
 use App\Http\Controllers\Api\PatientController;
+use App\Http\Controllers\Api\PatientImmunizationController;
 use App\Http\Controllers\Api\PatientMedicalRecordsController;
+use App\Http\Controllers\Api\PatientMedicationController;
+use App\Http\Controllers\Api\PatientOrderController;
+use App\Http\Controllers\Api\PatientProblemController;
 use App\Http\Controllers\Api\PatientUpdateNoticeController;
+use App\Http\Controllers\Api\PatientVitalController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\UserProfileController;
 use App\Models\User;
@@ -43,7 +49,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/organizations/{organization}', [OrganizationController::class, 'show']);
         Route::patch('/organizations/{organization}', [OrganizationController::class, 'updateProfile'])
             ->middleware(['org.ability:'.OrganizationAbilities::CAN_EDIT_ORGANIZATION_PROFILE]);
+        Route::patch('/organizations/{organization}/membership/title', [OrganizationController::class, 'updateMyTitle']);
         Route::get('/organizations/{organization}/members', [OrganizationController::class, 'members']);
+        Route::get('/organizations/{organization}/members/directory', [OrganizationController::class, 'directory']);
         Route::post('/organizations/{organization}/members', [OrganizationController::class, 'addMember']);
         Route::delete('/organizations/{organization}/members/{memberUser}', [OrganizationController::class, 'removeMember']);
         Route::patch(
@@ -74,6 +82,38 @@ Route::middleware('auth:sanctum')->group(function (): void {
             ->middleware(['org.ability:'.OrganizationAbilities::CAN_CREATE_PATIENT]);
         Route::get('/organizations/{organization}/patients/{patient}', [PatientController::class, 'show'])
             ->middleware(['org.ability:'.OrganizationAbilities::CAN_VIEW_PATIENTS]);
+        Route::patch('/organizations/{organization}/patients/{patient}', [PatientController::class, 'update'])
+            ->middleware(['org.ability:'.OrganizationAbilities::CAN_EDIT_PATIENT]);
+        Route::delete('/organizations/{organization}/patients/{patient}', [PatientController::class, 'destroy'])
+            ->middleware(['org.ability:'.OrganizationAbilities::CAN_EDIT_PATIENT]);
+
+        Route::middleware(['org.ability:'.OrganizationAbilities::CAN_EDIT_PATIENT])->group(function (): void {
+            Route::post('/organizations/{organization}/patients/{patient}/allergies', [PatientAllergyController::class, 'store']);
+            Route::patch('/organizations/{organization}/patients/{patient}/allergies/{allergy}', [PatientAllergyController::class, 'update']);
+            Route::delete('/organizations/{organization}/patients/{patient}/allergies/{allergy}', [PatientAllergyController::class, 'destroy']);
+
+            Route::post('/organizations/{organization}/patients/{patient}/problems', [PatientProblemController::class, 'store']);
+            Route::patch('/organizations/{organization}/patients/{patient}/problems/{problem}', [PatientProblemController::class, 'update']);
+            Route::delete('/organizations/{organization}/patients/{patient}/problems/{problem}', [PatientProblemController::class, 'destroy']);
+
+            Route::post('/organizations/{organization}/patients/{patient}/medications', [PatientMedicationController::class, 'store']);
+            Route::patch('/organizations/{organization}/patients/{patient}/medications/{medication}', [PatientMedicationController::class, 'update']);
+            Route::delete('/organizations/{organization}/patients/{patient}/medications/{medication}', [PatientMedicationController::class, 'destroy']);
+
+            Route::post('/organizations/{organization}/patients/{patient}/immunizations', [PatientImmunizationController::class, 'store']);
+            Route::patch('/organizations/{organization}/patients/{patient}/immunizations/{immunization}', [PatientImmunizationController::class, 'update']);
+            Route::delete('/organizations/{organization}/patients/{patient}/immunizations/{immunization}', [PatientImmunizationController::class, 'destroy']);
+
+            Route::post('/organizations/{organization}/patients/{patient}/vitals', [PatientVitalController::class, 'store']);
+            Route::patch('/organizations/{organization}/patients/{patient}/vitals/{vital}', [PatientVitalController::class, 'update']);
+            Route::delete('/organizations/{organization}/patients/{patient}/vitals/{vital}', [PatientVitalController::class, 'destroy']);
+        });
+
+        Route::post('/organizations/{organization}/patients/{patient}/orders', [PatientOrderController::class, 'store'])
+            ->middleware(['org.ability:'.OrganizationAbilities::CAN_CREATE_ORDER]);
+        Route::get('/organizations/{organization}/orders', [PatientOrderController::class, 'index'])
+            ->middleware(['org.ability:'.OrganizationAbilities::CAN_VIEW_PATIENTS]);
+        Route::patch('/organizations/{organization}/orders/{order}', [PatientOrderController::class, 'update']);
 
         Route::get('/organizations/{organization}/patient-notices', [PatientUpdateNoticeController::class, 'index'])
             ->middleware(['org.ability:'.OrganizationAbilities::CAN_VIEW_PATIENTS]);

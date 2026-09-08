@@ -20,6 +20,7 @@ class StoreLabResultReportRequest extends FormRequest
     {
         return [
             'patient_id' => ['nullable', 'integer', 'exists:patients,id'],
+            'order_id' => ['nullable', 'integer', 'exists:patient_orders,id'],
             'first_name' => ['required_without:patient_id', 'string', 'max:120'],
             'surname' => ['required_without:patient_id', 'string', 'max:120'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],

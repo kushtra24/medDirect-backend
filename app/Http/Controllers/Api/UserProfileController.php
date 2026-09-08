@@ -22,6 +22,7 @@ class UserProfileController extends Controller
     public function update(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            'name' => ['sometimes', 'string', 'min:1', 'max:255'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'blood_type' => ['nullable', 'string', 'max:16'],
             'phone' => ['nullable', 'string', 'max:32'],

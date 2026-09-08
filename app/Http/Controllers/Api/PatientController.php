@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ImportPatientsRequest;
 use App\Http\Requests\Api\StorePatientRequest;
+use App\Http\Requests\Api\UpdatePatientRequest;
 use App\Http\Resources\PatientResource;
 use App\Models\Organization;
 use App\Models\Patient;
@@ -349,10 +350,50 @@ class PatientController extends Controller
                 ->with(['items', 'createdBy'])
                 ->orderByDesc('reported_at')
                 ->orderByDesc('id'),
+            'allergyRecords.createdBy',
+            'problems.createdBy',
+            'medications.createdBy',
+            'immunizations.createdBy',
+            'vitals.createdBy',
+            'orders.assignedTo',
+            'orders.createdBy',
         ]);
 
         return response()->json([
             'patient' => new PatientResource($patient),
+        ]);
+    }
+
+    public function update(UpdatePatientRequest $request, Organization $organization, Patient $patient): JsonResponse
+    {
+        if ($patient->organization_id !== $organization->id) {
+            abort(404);
+        }
+
+        $patient->update($request->validated());
+        $patient->load('organization');
+
+        return response()->json([
+            'patient' => new PatientResource($patient),
+            'message' => 'Patient updated successfully.',
+        ]);
+    }
+
+    /**
+     * Soft-deletes the patient. Their lab/examination history is kept intact (not
+     * cascade-deleted) since the row is only flagged, not removed — this just hides
+     * them from search/listing within this organization.
+     */
+    public function destroy(Request $request, Organization $organization, Patient $patient): JsonResponse
+    {
+        if ($patient->organization_id !== $organization->id) {
+            abort(404);
+        }
+
+        $patient->delete();
+
+        return response()->json([
+            'message' => 'Patient deleted.',
         ]);
     }
 }

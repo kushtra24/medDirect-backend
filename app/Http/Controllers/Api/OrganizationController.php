@@ -13,6 +13,7 @@ use App\Models\ClinicPhone;
 use App\Models\Organization;
 use App\Models\OrganizationMember;
 use App\Models\User;
+use App\Services\DescriptionSanitizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -83,7 +84,7 @@ class OrganizationController extends Controller
             $organization->name = $validated['name'];
         }
         if (array_key_exists('description', $validated)) {
-            $organization->description = $validated['description'];
+            $organization->description = DescriptionSanitizer::clean($validated['description']);
         }
         if (array_key_exists('email', $validated)) {
             $organization->email = $validated['email'];
@@ -189,6 +190,56 @@ class OrganizationController extends Controller
         ]);
     }
 
+    /**
+     * Lets the authenticated staff member set their own professional title within this
+     * organization. Uses the same permission as managing staff generally (owner or
+     * canManageStaff) — unlike {@see updateMemberAbilities}, this is always self-scoped,
+     * so it does not need to guard against one staffer editing another's membership row.
+     */
+    public function updateMyTitle(Request $request, Organization $organization): JsonResponse
+    {
+        $auth = $request->user();
+        $this->assertCanManageStaff($auth, $organization);
+
+        $validated = $request->validate([
+            'title' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        $member = $auth->membershipFor($organization);
+        if ($member === null) {
+            abort(404);
+        }
+
+        $member->title = $validated['title'] ?? null;
+        $member->save();
+
+        return response()->json([
+            'title' => $member->title,
+        ]);
+    }
+
+    /**
+     * A lightweight coworker list (id, name, title) for pickers like "assign this order
+     * to" — open to any member of the organization, unlike {@see members} which requires
+     * staff-management rights and also exposes each member's full ability set.
+     */
+    public function directory(Organization $organization): JsonResponse
+    {
+        $members = $organization->members()
+            ->with('user')
+            ->get()
+            ->map(fn (OrganizationMember $member) => [
+                'id' => $member->user->id,
+                'name' => $member->user->name,
+                'title' => $member->title,
+            ])
+            ->values();
+
+        return response()->json([
+            'members' => $members,
+        ]);
+    }
+
     public function members(Request $request, Organization $organization): JsonResponse
     {
         $this->assertCanManageStaff($request->user(), $organization);
@@ -249,8 +300,11 @@ class OrganizationController extends Controller
                 'name' => $validated['name'],
                 'email' => $email,
                 'password' => $validated['password'],
-                'role' => User::ROLE_STAFF,
             ]);
+            // `role` isn't mass-assignable (see User::class Fillable attribute), so it must
+            // be set directly — passing it inside create() above silently no-ops and leaves
+            // the column at its 'patient' default.
+            $targetUser->role = User::ROLE_STAFF;
             $targetUser->must_change_password = true;
             $targetUser->save();
         }

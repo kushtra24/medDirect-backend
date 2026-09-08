@@ -9,6 +9,7 @@ use App\Models\ExaminationResultItem;
 use App\Models\ExaminationResultReport;
 use App\Models\Organization;
 use App\Models\Patient;
+use App\Models\PatientOrder;
 use Illuminate\Http\JsonResponse;
 
 class ExaminationResultReportController extends Controller
@@ -44,10 +45,39 @@ class ExaminationResultReportController extends Controller
             ]);
         }
 
+        if (! empty($validated['order_id'])) {
+            $this->fulfillOrder((int) $validated['order_id'], $organization, $patient, $report);
+        }
+
         $report->load(['patient.organization', 'organization', 'items']);
 
         return response()->json([
             'report' => new ExaminationResultReportResource($report),
         ], 201);
+    }
+
+    /**
+     * Marks the order that prompted this report as resulted — an examination order
+     * fulfilled by anything other than an exam report (or belonging to a different
+     * patient/org) is left untouched rather than silently mis-linked.
+     */
+    private function fulfillOrder(int $orderId, Organization $organization, Patient $patient, ExaminationResultReport $report): void
+    {
+        $order = PatientOrder::query()->find($orderId);
+
+        if (
+            $order === null
+            || $order->organization_id !== $organization->id
+            || $order->patient_id !== $patient->id
+            || $order->type !== PatientOrder::TYPE_EXAMINATION
+        ) {
+            return;
+        }
+
+        $order->update([
+            'examination_result_report_id' => $report->id,
+            'status' => PatientOrder::STATUS_COMPLETED,
+            'completed_at' => now(),
+        ]);
     }
 }
