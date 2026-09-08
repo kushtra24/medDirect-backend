@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Patient extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'organization_id',
         'user_id',
@@ -65,6 +68,40 @@ class Patient extends Model
     public function updateNotices(): HasMany
     {
         return $this->hasMany(PatientUpdateNotice::class);
+    }
+
+    /**
+     * Named to avoid colliding with the legacy free-text `allergies` column —
+     * accessing `$patient->allergies` must keep returning that column's raw value.
+     */
+    public function allergyRecords(): HasMany
+    {
+        return $this->hasMany(PatientAllergy::class)->orderByDesc('noted_at')->orderByDesc('id');
+    }
+
+    public function problems(): HasMany
+    {
+        return $this->hasMany(PatientProblem::class)->orderByDesc('onset_date')->orderByDesc('id');
+    }
+
+    public function medications(): HasMany
+    {
+        return $this->hasMany(PatientMedication::class)->orderByDesc('start_date')->orderByDesc('id');
+    }
+
+    public function immunizations(): HasMany
+    {
+        return $this->hasMany(PatientImmunization::class)->orderByDesc('administered_at')->orderByDesc('id');
+    }
+
+    public function vitals(): HasMany
+    {
+        return $this->hasMany(PatientVital::class)->orderByDesc('recorded_at')->orderByDesc('id');
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(PatientOrder::class)->orderByDesc('created_at');
     }
 
     public function fullName(): string

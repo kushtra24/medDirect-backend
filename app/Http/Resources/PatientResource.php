@@ -42,6 +42,12 @@ class PatientResource extends JsonResource
             'created_at' => $this->created_at,
             'lab_result_reports' => LabResultReportResource::collection($this->whenLoaded('labResultReports')),
             'examination_result_reports' => ExaminationResultReportResource::collection($this->whenLoaded('examinationResultReports')),
+            'allergy_records' => PatientAllergyResource::collection($this->whenLoaded('allergyRecords')),
+            'problems' => PatientProblemResource::collection($this->whenLoaded('problems')),
+            'medications' => PatientMedicationResource::collection($this->whenLoaded('medications')),
+            'immunizations' => PatientImmunizationResource::collection($this->whenLoaded('immunizations')),
+            'vitals' => PatientVitalResource::collection($this->whenLoaded('vitals')),
+            'orders' => PatientOrderResource::collection($this->whenLoaded('orders')),
         ];
     }
 }

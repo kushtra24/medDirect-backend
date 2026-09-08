@@ -66,6 +66,7 @@ class MedController extends Controller
             'clinicAddresses',
             'clinicPhones',
             'clinicImages',
+            'clinicTeamMembers',
             'services',
         ]);
 
@@ -137,6 +138,9 @@ class MedController extends Controller
     {
         $cardImage = $org->clinicImages->first();
 
+        $primaryAddress = $org->clinicAddresses->firstWhere('is_primary', true)
+            ?? $org->clinicAddresses->first();
+
         return [
             'id' => $org->id,
             'slug' => $org->slug,
@@ -145,6 +149,9 @@ class MedController extends Controller
             'rating' => $org->rating,
             'distance' => $org->distance_km,
             'neighborhood' => $org->neighborhood,
+            'address' => $primaryAddress?->line,
+            'latitude' => $org->latitude !== null ? (float) $org->latitude : null,
+            'longitude' => $org->longitude !== null ? (float) $org->longitude : null,
             'isOpen' => $org->isOpenNow(),
             'openTime' => $org->nextOpenTimeLabel(),
             'image' => $cardImage?->url,
@@ -169,6 +176,7 @@ class MedController extends Controller
             'type' => $org->type,
             'certified' => $org->certified,
             'description' => $org->description,
+            'email' => $org->email,
             'allowsAppointments' => $org->allows_appointments,
             'healthInsurances' => $org->health_insurances ?? [],
             'languagesSpoken' => $org->languages_spoken ?? [],
@@ -190,6 +198,15 @@ class MedController extends Controller
             'heroImage' => $imagesByType->get(ClinicImage::TYPE_HERO)?->first()?->url,
             'logo' => $imagesByType->get(ClinicImage::TYPE_LOGO)?->first()?->url,
             'mapImage' => $imagesByType->get(ClinicImage::TYPE_MAP)?->first()?->url,
+            'gallery' => ($imagesByType->get(ClinicImage::TYPE_GALLERY) ?? collect())
+                ->map(fn (ClinicImage $img) => $img->url)
+                ->values()->all(),
+            'teamMembers' => $org->clinicTeamMembers->map(fn ($m) => [
+                'id' => $m->id,
+                'name' => $m->name,
+                'title' => $m->title,
+                'imageUrl' => $m->image_url,
+            ])->values()->all(),
             'services' => $org->services->map(fn ($s) => [
                 'icon' => $s->icon,
                 'label' => $s->name,

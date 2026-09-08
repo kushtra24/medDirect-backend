@@ -14,6 +14,8 @@ class ClinicImageController extends Controller
 {
     private const SINGLE_TYPES = [ClinicImage::TYPE_LOGO, ClinicImage::TYPE_HERO];
 
+    private const GALLERY_MAX = 3;
+
     public function store(Request $request, Organization $organization): JsonResponse
     {
         $validated = $request->validate([
@@ -35,6 +37,10 @@ class ClinicImageController extends Controller
             }
             $sortOrder = 0;
         } else {
+            $galleryCount = $organization->clinicImages()->where('type', ClinicImage::TYPE_GALLERY)->count();
+            if ($type === ClinicImage::TYPE_GALLERY && $galleryCount >= self::GALLERY_MAX) {
+                abort(422, 'Maximum of '.self::GALLERY_MAX.' gallery photos reached.');
+            }
             $sortOrder = (int) $organization->clinicImages()->where('type', $type)->max('sort_order') + 1;
         }
 

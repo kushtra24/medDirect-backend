@@ -21,6 +21,7 @@ class StoreExaminationResultReportRequest extends FormRequest
     {
         return [
             'patient_id' => ['required', 'integer', 'exists:patients,id'],
+            'order_id' => ['nullable', 'integer', 'exists:patient_orders,id'],
             'doctor_note' => ['nullable', 'string', 'max:5000'],
             'status' => ['nullable', 'string', Rule::in(['draft', 'finalized'])],
             'items' => ['present', 'array'],

@@ -44,6 +44,7 @@ class AuthUserResource extends JsonResource
                     'slug' => $org->slug,
                     'type' => $org->type,
                     'is_owner' => $member->is_owner,
+                    'title' => $member->title,
                     'abilities' => $member->effectiveAbilities(),
                 ];
             })->values(),

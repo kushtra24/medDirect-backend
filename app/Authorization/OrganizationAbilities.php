@@ -19,9 +19,23 @@ final class OrganizationAbilities
 
     public const CAN_CREATE_DOCTORS_NOTE = 'canCreateDoctorsNote';
 
+    public const CAN_CREATE_ORDER = 'canCreateOrder';
+
     public const CAN_MANAGE_STAFF = 'canManageStaff';
 
     public const CAN_EDIT_ORGANIZATION_PROFILE = 'canEditOrganizationProfile';
+
+    /**
+     * Abilities every new staff member starts with, without the owner having to configure
+     * anything — front-desk work (registering who's here and why) is core to being staff
+     * at all, unlike the more sensitive abilities below which default off.
+     *
+     * @var list<string>
+     */
+    private const DEFAULT_GRANTED = [
+        self::CAN_CREATE_PATIENT,
+        self::CAN_CREATE_ORDER,
+    ];
 
     /**
      * @return list<string>
@@ -35,6 +49,7 @@ final class OrganizationAbilities
             self::CAN_EDIT_LAB_RESULTS,
             self::CAN_CREATE_ADD_RESULTS,
             self::CAN_CREATE_DOCTORS_NOTE,
+            self::CAN_CREATE_ORDER,
             self::CAN_MANAGE_STAFF,
             self::CAN_EDIT_ORGANIZATION_PROFILE,
         ];
@@ -57,6 +72,22 @@ final class OrganizationAbilities
     }
 
     /**
+     * The starting point for a new staff member before any explicit choices are stored —
+     * everything off except {@see DEFAULT_GRANTED}.
+     *
+     * @return array<string, bool>
+     */
+    public static function defaults(): array
+    {
+        $base = self::allFalse();
+        foreach (self::DEFAULT_GRANTED as $key) {
+            $base[$key] = true;
+        }
+
+        return $base;
+    }
+
+    /**
      * @param  array<string, bool>|null  $stored
      * @return array<string, bool>
      */
@@ -66,7 +97,7 @@ final class OrganizationAbilities
             return self::allTrue();
         }
 
-        $base = self::allFalse();
+        $base = self::defaults();
         if ($stored === null) {
             return $base;
         }

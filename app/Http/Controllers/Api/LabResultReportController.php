@@ -9,6 +9,7 @@ use App\Models\LabResultItem;
 use App\Models\LabResultReport;
 use App\Models\Organization;
 use App\Models\Patient;
+use App\Models\PatientOrder;
 use Illuminate\Http\JsonResponse;
 class LabResultReportController extends Controller
 {
@@ -40,11 +41,40 @@ class LabResultReportController extends Controller
             ]);
         }
 
+        if (! empty($validated['order_id'])) {
+            $this->fulfillOrder((int) $validated['order_id'], $organization, $patient, $report);
+        }
+
         $report->load(['patient.organization', 'organization', 'items']);
 
         return response()->json([
             'report' => new LabResultReportResource($report),
         ], 201);
+    }
+
+    /**
+     * Marks the order that prompted this report as resulted — a lab order fulfilled by
+     * anything other than a lab report (or belonging to a different patient/org) is left
+     * untouched rather than silently mis-linked.
+     */
+    private function fulfillOrder(int $orderId, Organization $organization, Patient $patient, LabResultReport $report): void
+    {
+        $order = PatientOrder::query()->find($orderId);
+
+        if (
+            $order === null
+            || $order->organization_id !== $organization->id
+            || $order->patient_id !== $patient->id
+            || $order->type !== PatientOrder::TYPE_LAB
+        ) {
+            return;
+        }
+
+        $order->update([
+            'lab_result_report_id' => $report->id,
+            'status' => PatientOrder::STATUS_COMPLETED,
+            'completed_at' => now(),
+        ]);
     }
 
     /**
